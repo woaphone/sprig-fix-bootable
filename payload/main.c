@@ -1,9 +1,12 @@
+/* Modified by 秋逸(逸) <2898684403@qq.com> */
 #include <bldr.h>
+#include <chainload.h>
 #include <debug.h>
-#include <hooks.h>
+#include <mmio.h>
 #include <patches.h>
+#include <target.h>
 
-void main(void) {
+int main(void) {
     printf("\n");
     printf("           .--._.--.          \n");
     printf("          ( O     O )         \n");
@@ -17,14 +20,30 @@ void main(void) {
     printf(">_       _} |  |  | {_       _<         |_|           |___/ \n");
     printf(" /. - ~ ,_-'  .^.  `-_, ~ - .\\      \n");
     printf("         '-'|/   \\|`-`              \n\n");
-    
-    set_log_switch(LOG_ON);
-    patch_apply_all();
-    hook_install_all();
 
-    ((void (*)(unsigned long))(0x02060B20))(5000); // wait 5 seconds ~
+    if (patch_apply_all() != 0) {
+        printf("Patch verification failed, refusing to continue.\n");
+        while (1);
+    }
 
-    bldr_handshake();
-    
-    while(1); // handshake should not return
+    /* OPPO may have latched usbEnum off in an earlier boot path, which
+       makes usb_connect() fail inside the handshake. Clear it. */
+    writeb(0, OPPO_USB_ENUM_LOCK);
+    flush_dcache_range(OPPO_USB_ENUM_LOCK, 64);
+
+    printf("About to handshake...\n\n");
+
+    int r = bldr_handshake();
+    printf("handshake returned %d\n", r);
+
+    /*
+     * The handshake returns when no successful DA session is in
+     * progress (a successful DA download jumps away inside the
+     * handshake and never returns). So unconditionally restore the
+     * original bl2_ext and continue the normal boot chain - this
+     * matches the behavior of the working reference payload.
+     */
+    chainload_to_bl2();
+
+    while (1);
 }

@@ -4,6 +4,8 @@
   <img src="images/execution.png" alt="Execution flow" width="600">
 </p>
 
+English version: [README_en.md](README_en.md) · 中文版：[README_zh-CN.md](README_zh-CN.md)
+
 ## What and why
 
 This is yet another example of what one can do with the underlying "vulnerability" used in my other project, [fenrir](https://github.com/R0rt1z2/fenrir).
@@ -56,6 +58,6 @@ Cache sharing is disabled before the privilege drop. This means that any patches
 
 ## License
 
-This payload is licensed under the AGPL-3.0-or-later License, copyright (C) 2026 R0rt1z2. See the [LICENSE](LICENSE) file for details.
+This payload is licensed under the AGPL-3.0-or-Later license, copyright (C) 2026 R0rt1z2. See the [LICENSE](LICENSE) file for details.
 
 This project includes [`nanoprintf`](https://github.com/charlesnicholson/nanoprintf), a minimal implementation of printf-style formatting designed for embedded systems. It is dual-licensed under the Unlicense and the Zero-Clause BSD (0BSD) - `© 2019 Charles Nicholson`

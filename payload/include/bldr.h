@@ -1,7 +1,9 @@
+/* Modified by 秋逸(逸) <2898684403@qq.com> */
 #pragma once
 
 #include <stdint.h>
 #include <stddef.h>
+#include <target.h>
 
 struct bldr_command_handler {
     void *priv;
@@ -9,7 +11,7 @@ struct bldr_command_handler {
     void *cb;
 };
 
-#define BLDR_HANDSHAKE_FUNC  0x02048404
-#define BLDR_CALLBACK_FUNC   0x02048818
+#define BLDR_HANDSHAKE_FUNC  BLDR_HANDSHAKE_ADDR
+#define BLDR_CALLBACK_FUNC   BLDR_CALLBACK_ADDR
 
-void bldr_handshake(void);
+int bldr_handshake(void);
