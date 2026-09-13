@@ -1,4 +1,3 @@
-/* Modified by 秋逸(逸) <2898684403@qq.com> */
 #pragma once
 
 #include <stdint.h>
@@ -13,5 +12,9 @@ struct bldr_command_handler {
 
 #define BLDR_HANDSHAKE_FUNC  BLDR_HANDSHAKE_ADDR
 #define BLDR_CALLBACK_FUNC   BLDR_CALLBACK_ADDR
+#define BLDR_LOG_FUNC        PL_LOG_PRINTF_ADDR
+
+#define BLDR_ERR_PREPARE     (-0x5301)
+#define BLDR_ERR_RESTORE     (-0x5302)
 
 int bldr_handshake(void);

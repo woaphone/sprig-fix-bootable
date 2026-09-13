@@ -16,6 +16,7 @@
  */
 .section .text.chainload
 .global chainload_trampoline
+.align 3
 chainload_trampoline:
     mov     x10, x5
     mov     x11, x6

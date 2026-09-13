@@ -1,17 +1,17 @@
-/* Modified by 秋逸(逸) <2898684403@qq.com> */
 ENTRY(_start)
 
 MEMORY
 {
-    /* The preloader loads the composite bl2_ext image at 0xB8000000.
-       The payload itself must stay below 0xB8020000; the original
-       bl2_ext is appended there by the injector. */
-    DRAM (rwx) : ORIGIN = 0xB8000000, LENGTH = 0x20000
+    /* The preloader loads the composite bl2_ext image at 0x78000000
+       (res_mem_info "system_bl2-ext" on MT6989 rothko). The payload
+       itself must stay below 0x78020000; the original bl2_ext is
+       appended there by the injector. */
+    DRAM (rwx) : ORIGIN = 0x78000000, LENGTH = 0x20000
 }
 
 SECTIONS
 {
-    . = 0xB8000000;
+    . = 0x78000000;
 
     .text : {
         KEEP(*(.text.entry))
@@ -42,5 +42,5 @@ SECTIONS
     } > DRAM
     __stack_end = .;
 
-    ASSERT(. <= 0xB8020000, "Payload exceeds the 0x20000 bl2_ext slot!")
+    ASSERT(. <= 0x78020000, "Payload exceeds the 0x20000 bl2_ext slot!")
 }

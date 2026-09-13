@@ -1,21 +1,13 @@
-/* Modified by 秋逸(逸) <2898684403@qq.com> */
 .section .text.entry
 .global _start
 
 _start:
-    /* The original bl2_ext entry ABI hands us x0-x3. The payload runs
-       first, so stash them in x19-x22 (callee-saved, never touched by
-       the copy trampoline) and pass them straight through on
-       chainload. This mirrors the working reference payload. */
     mov     x19, x0
     mov     x20, x1
     mov     x21, x2
     mov     x22, x3
-
     ldr     x0, =__stack_end
     mov     sp, x0
-
-	/* Zero BSS section */
     ldr     x0, =__bss_start
     ldr     x1, =__bss_end
     mov     x2, #0
@@ -25,8 +17,20 @@ _start:
     str     x2, [x0], #8
     b       1b
 2:
+    /* Keep entry arguments valid even when main uses callee-saved registers. */
+    adrp    x8, chainload_boot_args
+    add     x8, x8, :lo12:chainload_boot_args
+    stp     x19, x20, [x8]
+    stp     x21, x22, [x8, #16]
     bl      main
-
-3:  
+3:
     wfe
     b       3b
+
+.section .bss.entry_args,"aw",%nobits
+.balign 16
+.global chainload_boot_args
+.type chainload_boot_args, %object
+chainload_boot_args:
+    .skip 32
+.size chainload_boot_args, .-chainload_boot_args

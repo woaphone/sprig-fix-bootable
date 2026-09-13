@@ -1,4 +1,3 @@
-/* Modified by 秋逸(逸) <2898684403@qq.com> */
 #include <bldr.h>
 #include <chainload.h>
 #include <debug.h>
@@ -26,22 +25,26 @@ int main(void) {
         while (1);
     }
 
+#ifdef OPPO_USB_ENUM_LOCK
     /* OPPO may have latched usbEnum off in an earlier boot path, which
-       makes usb_connect() fail inside the handshake. Clear it. */
+       makes usb_connect() fail inside the handshake. Clear it. Not
+       needed on Xiaomi rothko. */
     writeb(0, OPPO_USB_ENUM_LOCK);
     flush_dcache_range(OPPO_USB_ENUM_LOCK, 64);
+#endif
 
     printf("About to handshake...\n\n");
 
     int r = bldr_handshake();
+    if (r == BLDR_ERR_RESTORE) {
+        while (1)
+            __asm__ volatile("wfe");
+    }
     printf("handshake returned %d\n", r);
 
     /*
-     * The handshake returns when no successful DA session is in
-     * progress (a successful DA download jumps away inside the
-     * handshake and never returns). So unconditionally restore the
-     * original bl2_ext and continue the normal boot chain - this
-     * matches the behavior of the working reference payload.
+     * The session has restored any temporary cache/permission changes.
+     * The stock bl2_ext owns its normal UFS initialization.
      */
     chainload_to_bl2();
 

@@ -1,19 +1,21 @@
-# Modified by 秋逸(逸) <2898684403@qq.com>
 #!/usr/bin/env python3
-"""Chainload injector for the sprig MT6991 payload.
+"""Chainload injector for the sprig MT6989 (rothko) payload.
 
 Replaces the bl2_ext sub-partition in an LK image with a composite:
   [payload.bin padded to 0x20000][original bl2_ext]
 
 The original bl2_ext is copied back over the payload by the chainload
 trampoline when the handshake times out, restoring the normal boot.
+
+NOTE: on this device the bl2_ext sub-image is covered by CERT1/CERT2.
+After injecting, re-sign the bl2_ext sub-image with the CERT2 hash
+override (pwnage24mtk sign_mtk_cert.py) or the preloader will refuse it.
 """
 import struct
 import sys
-from liblk.image import LkImage
 
 PAYLOAD_SLOT = 0x20000
-BL2_LOAD = 0xB8000000
+BL2_LOAD = 0x78000000
 
 
 def main():
@@ -85,5 +87,5 @@ def main():
     return 0
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     sys.exit(main())
