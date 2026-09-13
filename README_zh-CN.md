@@ -12,7 +12,7 @@ English version: [README_en.md](README_en.md) · 原版：[README.md](README.md)
 
 基于 [fenrir](https://github.com/R0rt1z2/fenrir) 漏洞的又一个例子：用一段极小的 payload 替换现代 ARMv8 MediaTek 设备 LK 分区里的 `bl2_ext`，在 EL3 下修改 Preloader，关闭 SBC / SLA / DAA 安全校验，从而可以用 `penumbra` 或 `mtkclient` 启动未签名的 DA，任意刷写、导出分区。
 
-你会看到两个 Preloader 端口：第一个约 2 秒消失；第二个（payload 修改后暴露）保持约 8 秒供你连接工具。
+你会看到两个 Preloader 端口：第一个约 2 秒消失；第二个（payload 修改后暴露）窗口很短（MT6989 实测约 2 秒）供你连接工具——v5 还额外把它推迟了 1.5 秒，方便主机工具抓到。
 
 ## 致谢
 
@@ -32,6 +32,7 @@ English version: [README_en.md](README_en.md) · 原版：[README.md](README.md)
 - **握手会话保存/恢复**：为打开握手门而写的充电检测缓存先保存、写入后回读验证，chainload 前恢复原值。任何恢复失败时 payload 原地 `wfe` 停机，绝不带坏状态继续开机。
 - **可选 SRAM 权限放宽**（默认关闭）：`make SRAM_RESTORE=1` 会在握手前清掉 Preloader SRAM 安全控制器中经审计的权限字段，事后恢复；遇到不认识的 SRAM 策略直接安全中止。
 - **trampoline 8 字节对齐**：`chainload.S` 强制对齐（EL1 `SCTLR.A=1` 下落在 4 mod 8 地址会当场 data abort，实测踩过）。
+- **第二端口推迟 1.5 秒**：原版行为下，端口在 USB 枚举完成后（握手开始约 400ms）立刻出现，而工具监听窗（2500ms，`w28=0x9C4`，从握手入口起算）约 2 秒后就关死——主机工具很难抓到。现在 payload 先等 1.5 秒（`target_config.h` 的 `BLDR_HANDSHAKE_DELAY_US`，调用 Preloader 自带的 `udelay` `0x020815AC`）再进握手，端口出现时工具早已在监听。旧文档说的"约 8 秒窗口"其实是 USB 枚举超时（`w23=0x1F40`），不是工具窗口。
 
 ## 相对原版 sprig 的全部改动（及原因）
 
@@ -85,6 +86,7 @@ English version: [README_en.md](README_en.md) · 原版：[README.md](README.md)
 - **去掉握手超时补丁**：rothko 的握手本身就等 2500ms + 8000ms（`w28=0x9C4 / w23=0x1F40`），`PATCH_TIMEOUT_*` 在这个目标上用不着。
 - **可选 SRAM 权限放宽**（`make SRAM_RESTORE=1`，默认关闭）：握手前清掉 Preloader SRAM 安全控制器中经审计的权限字段，事后恢复；遇到不认识的 SRAM 策略安全中止。
 - **构建工具**（`Makefile`）：`SRAM_RESTORE` 开关、`-MMD -MP` 依赖跟踪加强制重建（特性开关永不复用旧目标文件）、bl2_len 偏移基准改为 `0x78000000`。
+- **第二端口推迟 1.5 秒**（`bldr.c`、`target_config.h`）：接手时是直接进握手，usbdl 端口枚举完就出现、2500ms 监听窗约 2 秒后关死，主机工具很难抓。现在 payload 通过 Preloader 的 `udelay` 先等 `BLDR_HANDSHAKE_DELAY_US`（rothko 上 1.5 秒）再进握手，端口出现时工具已在监听；会话保存/恢复与 chainload 逻辑一行未动。
 
 ## 构建
 
@@ -111,7 +113,7 @@ rothko 注意：`bl2_ext` 子镜像受 CERT1/CERT2 覆盖——注入后必须�
 
 ## 恢复安卓系统引导（本仓库新增）
 
-原版注入后设备无法正常开机。本版本改为**复合镜像**：payload 自带原厂 `bl2_ext`，握手超时（没有工具连接）后自动把原厂 `bl2_ext` 复制回去并继续启动——**设备正常开机，不再变砖**。工具在 8 秒内连接并成功上传 DA 则直接进入 DA 会话。
+原版注入后设备无法正常开机。本版本改为**复合镜像**：payload 自带原厂 `bl2_ext`，握手超时（没有工具连接）后自动把原厂 `bl2_ext` 复制回去并继续启动——**设备正常开机，不再变砖**。工具在监听窗口内连接并成功上传 DA 则直接进入 DA 会话。
 
 建议刷 `lk_a`，保留原厂 LK 与 B 槽作回退。
 

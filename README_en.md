@@ -12,7 +12,7 @@ English version: README_en.md · 中文版：[README_zh-CN.md](README_zh-CN.md) 
 
 Yet another example built on the underlying vulnerability used in [fenrir](https://github.com/R0rt1z2/fenrir): a tiny payload replaces the `bl2_ext` image in the LK partition of modern ARMv8 MediaTek devices, runs in EL3, and patches the Preloader in memory to disable SBC / SLA / DAA checks. This allows booting unsigned DAs with `penumbra` or `mtkclient` for unrestricted flash/dump operations.
 
-You will see two Preloader ports: the first disappears within ~2 seconds, the second (exposed after the payload patches the Preloader) stays for ~8 seconds to connect your tool.
+You will see two Preloader ports: the first disappears within ~2 seconds, the second (exposed after the payload patches the Preloader) stays for a short window (~2 s on MT6989) to connect your tool — v5 additionally defers it by 1.5 s so host tools have time to catch it.
 
 ## Acknowledgments
 
@@ -32,6 +32,7 @@ This is the version confirmed working on the maintainer's rothko (MT6989, engine
 - **Handshake session save/restore**: the charger-detection cache seeded to open the handshake gate is saved first, every write is verified by read-back, and the original values are restored before chainload. If a restore fails, the payload parks itself (`wfe`) instead of continuing with corrupted Preloader state.
 - **Optional SRAM permission relaxation** (off by default): build with `make SRAM_RESTORE=1` to also clear the audited permission fields of the Preloader's SRAM security controllers before the handshake and restore them afterwards. Unrecognized SRAM policies abort safely.
 - **8-byte trampoline alignment**: `chainload.S` aligns the trampoline (`EL1 SCTLR.A=1` makes a 4-mod-8 placement data-abort on device).
+- **Deferred second port** (1.5 s): as built, the port appeared right after USB enumeration (~400 ms into the handshake) and the tool-listen window (2500 ms, `w28=0x9C4`, measured from handshake entry) closed ~2 s later — too fast for host tools to catch. The payload now waits 1.5 s (`BLDR_HANDSHAKE_DELAY_US` in `target_config.h`, via the Preloader's own `udelay` at `0x020815AC`) before entering the handshake, so the port shows up when the tool is already listening. The ~8 s window quoted in older descriptions is the USB-enumeration timeout (`w23=0x1F40`), not the tool window.
 
 ## Everything that changed compared to upstream sprig (and why)
 
@@ -85,6 +86,7 @@ Baseline: the fork as received from 秋逸(逸) — chainload anti-brick, expect
 - **Dropped the handshake-timeout patch**: rothko's handshake already waits 2500 ms + 8000 ms (`w28=0x9C4 / w23=0x1F40`), so `PATCH_TIMEOUT_*` is unnecessary on this target.
 - **Optional SRAM permission relaxation** (`make SRAM_RESTORE=1`, default off): clears the audited permission fields of the Preloader's SRAM security controllers before the handshake and restores them afterwards; unrecognized SRAM policies abort safely.
 - **Build tooling** (`Makefile`): `SRAM_RESTORE` flag, `-MMD -MP` dependency tracking plus forced rebuilds so flag changes never reuse stale objects, and the bl2_len offset base moved to `0x78000000`.
+- **Deferred second port** (`bldr.c`, `target_config.h`): the received version entered the handshake immediately, so the usbdl port appeared right after enumeration and the 2500 ms listen window closed ~2 s later — hard to catch with a host tool. The payload now defers the handshake by `BLDR_HANDSHAKE_DELAY_US` (1.5 s on rothko) via the Preloader's `udelay`, making the port appear when the tool is already listening; the session save/restore and chainload logic are untouched.
 
 ## Building
 
@@ -111,7 +113,7 @@ Note for rothko: the `bl2_ext` sub-image is covered by CERT1/CERT2 — re-sign i
 
 ## Restoring the Android boot (new in this repository)
 
-The original version cannot continue the normal boot. This version builds a **composite image** that carries the stock `bl2_ext`; when the handshake times out (no tool connected), the stock `bl2_ext` is copied back and the normal boot continues — **the device boots normally, no permanent brick**. If a tool connects within the 8 s window and uploads a DA successfully, the flow enters the DA session instead.
+The original version cannot continue the normal boot. This version builds a **composite image** that carries the stock `bl2_ext`; when the handshake times out (no tool connected), the stock `bl2_ext` is copied back and the normal boot continues — **the device boots normally, no permanent brick**. If a tool connects within the listen window and uploads a DA successfully, the flow enters the DA session instead.
 
 Recommended: flash to `lk_a`, keep the stock LK and the B slot as fallback.
 
