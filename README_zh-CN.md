@@ -23,6 +23,8 @@ English version: [README_en.md](README_en.md) · 原版：[README.md](README.md)
 
 ## v5 新增（已在 MT6989 rothko 上验证可用）
 
+**v5 的由来**：在 MT6989 上，原版 sprig——包括恢复引导的可启动 fork——无法成功发送 Download Agent。Preloader 的握手被充电检测缓存门控，不动它第二端口根本不会出现；即使 DA 会话开始，payload 留下被改动的 Preloader 会话状态也会让会话以 `All storage init fail` 告终。v5 在握手前后对这份会话状态做保存/回读验证/恢复（外加可选的 SRAM 权限放宽），DA 才真正跑得起来。
+
 本版本在维护者的 rothko（MT6989，工程版 preloader）上实测通过：第二 Preloader 端口正常枚举，`mtkclient`/SPFT 可进入 DA 会话；无工具连接时握手超时后设备正常开机。
 
 - **MT6989 rothko 目标配置**：`payload/include/target_config.h` 现附 rothko 配置（握手 `0x020585E0`、回调 `0x0205F604`、`usbdl_vfy_da` `0x02090218`、SLA/DAA/SBC getter `0x02099A50/64/78`），对照 FACTORY-ROTHKO-0820 工程 preloader 逐一核实。每个补丁点都带原始指令校验，固件不匹配会安全停止而不是盲改。去掉了 OPPO usbEnum 闩锁和握手超时补丁：rothko 都不需要（握手本身就等 2500ms + 8000ms）。

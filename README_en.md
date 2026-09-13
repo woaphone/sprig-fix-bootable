@@ -23,6 +23,8 @@ Thank you both — this repository would not exist without your work.
 
 ## What's new in v5 (verified on MT6989 rothko)
 
+**Why v5 exists:** on MT6989, the original sprig — including the boot-restore fork — cannot successfully send a Download Agent. The Preloader gates its handshake behind a charger-detection cache, so without touching it the second port never even appears; and even when a DA session starts, the payload leaving modified Preloader session state behind ends the session with `All storage init fail`. v5 seeds that cache with save/read-back/restore around the handshake (plus the optional SRAM permission relaxation), which is what makes a DA actually run.
+
 This is the version confirmed working on the maintainer's rothko (MT6989, engineering/factory preloader): the second Preloader port enumerates, a DA session runs over `mtkclient`/SPFT, and with no tool connected the device boots Android normally after the handshake window.
 
 - **MT6989 rothko target**: `payload/include/target_config.h` now ships the rothko configuration (handshake `0x020585E0`, handler cb `0x0205F604`, `usbdl_vfy_da` `0x02090218`, SLA/DAA/SBC getters `0x02099A50/64/78`), verified against the FACTORY-ROTHKO-0820 debug preloader. Every patch site keeps its expected instruction words, so a mismatched firmware fails safely instead of blind-patching. The OPPO usbEnum latch and the handshake-timeout patch were removed: rothko needs neither (its handshake already waits 2500 ms + 8000 ms).
