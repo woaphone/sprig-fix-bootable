@@ -7,9 +7,10 @@
 English version: [README_en.md](README_en.md) · 中文版：[README_zh-CN.md](README_zh-CN.md)
 
 > **Fork note:** this fork adds the Android boot-restore (chainload) feature and an
-> MT6989 (Xiaomi rothko) port, and is verified working on that device. The rest of
-> this file is the original author's description. Fork-specific documentation:
-> [README_en.md](README_en.md) / [README_zh-CN.md](README_zh-CN.md).
+> MT6989 (Xiaomi rothko) port, and is verified working on that device. A complete
+> list of the changes compared to upstream sprig, with the reasoning behind each
+> one, is in [README_en.md](README_en.md) / [README_zh-CN.md](README_zh-CN.md).
+> The rest of this file is the original author's description.
 
 ## Acknowledgments
 

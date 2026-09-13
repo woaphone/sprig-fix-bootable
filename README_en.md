@@ -31,6 +31,45 @@ This is the version confirmed working on the maintainer's rothko (MT6989, engine
 - **Optional SRAM permission relaxation** (off by default): build with `make SRAM_RESTORE=1` to also clear the audited permission fields of the Preloader's SRAM security controllers before the handshake and restore them afterwards. Unrecognized SRAM policies abort safely.
 - **8-byte trampoline alignment**: `chainload.S` aligns the trampoline (`EL1 SCTLR.A=1` makes a 4-mod-8 placement data-abort on device).
 
+## Everything that changed compared to upstream sprig (and why)
+
+Baseline: R0rt1z2's sprig as of this fork — an MT6991/Pacman example whose payload *replaces* `bl2_ext` and never returns to the normal boot.
+
+### Boot restore (the core feature)
+
+- **Composite bl2_ext image** (`inject.py`): upstream swapped the `bl2_ext` sub-partition for the payload, so after injecting, the device could not boot normally ("will remain 'bricked'" per the upstream README). This fork injects `[payload padded to 0x20000][stock bl2_ext]` and patches the stock length into `chainload_bl2_len` (first `.data` symbol; its offset is exported by the build) — the payload carries its own escape path.
+- **`chainload.c` / `chainload.S` / `chainload.h` (new)**: when the handshake window ends without a DA session, a position-independent trampoline copies the stock `bl2_ext` back over the payload (forward copy, dcache clean + icache invalidate) and jumps into it with the original entry arguments — normal boot continues instead of bricking. The trampoline lands in a per-target safe window (`TRAMPOLINE_ADDR`) past the composite image, and is 8-byte aligned because EL1 runs with `SCTLR.A=1` (a 4-mod-8 placement data-aborted on device).
+- **`entry.S`**: the stock `bl2_ext` entry arguments (x0–x3) are stashed into a BSS snapshot (`chainload_boot_args`) and recovered from memory before the trampoline. Passing them through x19–x22 was unreliable once `main()` started using callee-saved registers; upstream never preserved the arguments because it never intended to return.
+- **`linker.ld`**: added a MEMORY region, a 64 KB stack and an `ASSERT` that keeps the payload inside the 0x20000 `bl2_ext` slot; the load address is per-target (upstream hardcoded 0x62F00000).
+
+### Fail-safe patching
+
+- **`payload/include/target_config.h` (new)**: all per-target addresses in one file (upstream hardcoded MT6991 addresses inside `main.c` / `patches.c` / `bldr.c`); `target.h` simply includes it.
+- **`patches.c` / `patches.h`**: every patch site now carries the expected original instruction words (`PATCH_*_CHECKED`); `patch_apply_all()` returns a status and `main()` refuses to continue on mismatch — a different preloader build fails safely instead of being blind-patched.
+- **Patch set**: upstream patched the MT6991 handshake timeout, the UART-log switch, AEE boot and the direct SBC/SLA/DAA check functions. The rothko set is four patches — `usbdl_vfy_da` (accept any DA) plus the SLA/DAA/SBC security-flag getters (`mov w0,#0; ret`). The timeout patch is unnecessary on rothko (its handshake already waits 2500 ms + 8000 ms) and the AEE patch was not needed.
+
+### Handshake session handling
+
+- **`bldr.c` / `bldr.h` / `main.c`**: upstream just called the handshake and never came back. This fork seeds the charger-detection cache that gates the handshake (otherwise it prints "PMIC not dectect usb cable!" and returns immediately), saving the original values first and verifying every write by read-back. When the handshake returns with no DA session, the original session state is restored before chainload; if a restore fails, the payload parks itself (`wfe`) instead of booting with corrupted Preloader state (`BLDR_ERR_RESTORE`).
+- **Optional SRAM permission relaxation** (`make SRAM_RESTORE=1`, default off): clears the audited permission fields of the Preloader's SRAM security controllers before the handshake and restores them afterwards; unrecognized SRAM policies abort safely.
+- **`main.c`**: dropped upstream's `set_log_switch(LOG_ON)` and the fixed 5-second wait call (both MT6991-specific addresses); the OPPO usbEnum-latch clear is conditional and compiled out on rothko.
+
+### Console / driver
+
+- **`debug.c`**: the nanoprintf UART console was replaced with a no-op `printf` stub, matching the silent profile of the working reference payload; call sites and string literals are kept so the code layout stays close to the reference.
+- **`drivers/uart.c` / `uart.h`**: UART base corrected to the Preloader's `uart_base` pointer value (a SoC property, not a per-build address) and the transmit busy-wait is bounded so a wrong base cannot hang the payload.
+
+### Removed
+
+- **`hooks.c` / `heap.c`**: upstream's heap-hook trampoline framework and free-list dumper were research tooling for the original bug; this payload drives the PL download path directly and needs neither (it also keeps the payload small). The headers are kept but unused.
+- **`extract.sh` and the `bin/` sample firmware blobs**: extraction moved to the pwnage24mtk tooling (this device's `lk` is a five-sub-image V6+AVF container), and the MT6991 sample binaries should not be redistributed here.
+
+### Build & packaging
+
+- **`Makefile`**: toolchain commands overridable from the command line (distro cross-toolchains), `-MMD -MP` dependency tracking plus forced rebuilds so feature flags never reuse stale objects, and export of `bl2_len_offset.txt` (the address of `chainload_bl2_len`) consumed by the injector.
+- **`inject.py`**: composite injection as described above; also documents that the `bl2_ext` sub-image is covered by CERT1/CERT2 and must be re-signed after injecting.
+- **READMEs** (English / Chinese / the fun one) documenting all of the above.
+
 ## Building
 
 Requires an `aarch64-none-elf-gcc` toolchain. `build.sh` downloads one automatically; otherwise override the tools directly:

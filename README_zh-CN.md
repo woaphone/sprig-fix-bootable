@@ -31,6 +31,45 @@ English version: [README_en.md](README_en.md) · 原版：[README.md](README.md)
 - **可选 SRAM 权限放宽**（默认关闭）：`make SRAM_RESTORE=1` 会在握手前清掉 Preloader SRAM 安全控制器中经审计的权限字段，事后恢复；遇到不认识的 SRAM 策略直接安全中止。
 - **trampoline 8 字节对齐**：`chainload.S` 强制对齐（EL1 `SCTLR.A=1` 下落在 4 mod 8 地址会当场 data abort，实测踩过）。
 
+## 相对原版 sprig 的全部改动（及原因）
+
+基线：R0rt1z2 的 sprig 在本 fork 分出时的状态——MT6991/Pacman 示例，payload **替换** `bl2_ext` 且从不回到正常启动。
+
+### 启动恢复（核心功能）
+
+- **复合 bl2_ext 镜像**（`inject.py`）：原版直接用 payload 顶掉 `bl2_ext` 子分区，注入后设备无法正常开机（原版 README 原话 "will remain 'bricked'"）。本版注入 `[payload 补齐到 0x20000][原厂 bl2_ext]`，并把原厂长度回填进 `chainload_bl2_len`（`.data` 首符号，偏移由构建导出）——payload 自带退路。
+- **`chainload.c` / `chainload.S` / `chainload.h`（新增）**：握手窗口内没有 DA 会话时，位置无关的 trampoline 把原厂 `bl2_ext` 拷回 payload 位置（前向拷贝，dcache clean + icache invalidate），带上原始入口参数跳过去——正常开机继续，不变砖。trampoline 落在按目标配置的安全窗口（`TRAMPOLINE_ADDR`，复合镜像之后），且 8 字节对齐——EL1 开着 `SCTLR.A=1`，落在 4 mod 8 地址实测当场 data abort。
+- **`entry.S`**：原厂 `bl2_ext` 的入口参数（x0–x3）在入口存进 BSS 快照（`chainload_boot_args`），跳 trampoline 前从内存恢复。`main()` 开始使用 callee-saved 寄存器后，经 x19–x22 直传不可靠；原版从不保存参数，因为它从没打算返回。
+- **`linker.ld`**：新增 MEMORY 区域、64 KB 栈和把 payload 限制在 0x20000 `bl2_ext` 槽位内的 `ASSERT`；加载地址按目标配置（原版硬编码 0x62F00000）。
+
+### 补丁防呆
+
+- **`payload/include/target_config.h`（新增）**：所有目标相关地址集中在一个文件（原版把 MT6991 地址硬编码在 `main.c` / `patches.c` / `bldr.c` 里）；`target.h` 只负责包含它。
+- **`patches.c` / `patches.h`**：每个补丁点都带期望的原始指令字（`PATCH_*_CHECKED`）；`patch_apply_all()` 返回状态，`main()` 校验失败即拒绝继续——换一版 preloader 会安全停止，而不是被盲改。
+- **补丁集**：原版补 MT6991 的握手超时、UART 日志开关、AEE boot 和直连的 SBC/SLA/DAA 校验函数。rothko 集合是四个补丁——`usbdl_vfy_da`（放行任意 DA）加 SLA/DAA/SBC 安全标志 getter（`mov w0,#0; ret`）。超时补丁在 rothko 上不需要（握手本身就等 2500ms + 8000ms），AEE 补丁也用不上。
+
+### 握手会话处理
+
+- **`bldr.c` / `bldr.h` / `main.c`**：原版调完握手就再也没回来。本版先写握手门控所需的充电检测缓存（否则打印 "PMIC not dectect usb cable!" 直接返回），写之前保存原值、每次写入回读验证；握手返回（无 DA 会话）后先恢复原会话状态再 chainload。任何恢复失败时 payload 原地 `wfe` 停机（`BLDR_ERR_RESTORE`），绝不带坏掉的 Preloader 状态开机。
+- **可选 SRAM 权限放宽**（`make SRAM_RESTORE=1`，默认关闭）：握手前清掉 Preloader SRAM 安全控制器中经审计的权限字段，事后恢复；遇到不认识的 SRAM 策略安全中止。
+- **`main.c`**：去掉原版的 `set_log_switch(LOG_ON)` 和固定 5 秒等待调用（都是 MT6991 专属地址）；OPPO usbEnum 闩锁清除改为条件编译，rothko 上不参与编译。
+
+### 控制台 / 驱动
+
+- **`debug.c`**：nanoprintf UART 控制台换成 no-op `printf` 桩，与参考 payload 的静默行为一致；调用点和字符串保留，代码布局尽量贴近参考实现。
+- **`drivers/uart.c` / `uart.h`**：UART 基址改为 Preloader `uart_base` 指针里的值（SoC 属性，不随固件版本变）；发送忙等待加上限，基址不对也不会挂死 payload。
+
+### 删除
+
+- **`hooks.c` / `heap.c`**：原版的堆 hook trampoline 框架和 free list 导出是针对原始漏洞的调试工具；本 payload 直连 PL 下载路径，两者都用不上（也顺便控制体积）。头文件保留但已不使用。
+- **`extract.sh` 和 `bin/` 下的示例固件**：提取流程改用 pwnage24mtk（这台设备的 `lk` 是五子镜像 V6+AVF 容器），MT6991 示例二进制也不应再随仓库分发。
+
+### 构建与打包
+
+- **`Makefile`**：工具链命令可从命令行覆盖（发行版交叉工具链）；`-MMD -MP` 依赖跟踪加强制重建，特性开关永不复用旧目标文件；导出 `bl2_len_offset.txt`（`chainload_bl2_len` 地址）供注入器使用。
+- **`inject.py`**：如上述的复合注入；并注明 `bl2_ext` 子镜像受 CERT1/CERT2 覆盖，注入后必须重签。
+- **README**（英文 / 中文 / 八股文）记录以上全部内容。
+
 ## 构建
 
 需要 `aarch64-none-elf-gcc` 工具链，脚本会自动下载安装；也可以直接用发行版交叉工具链覆盖：
