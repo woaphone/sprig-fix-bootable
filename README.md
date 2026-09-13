@@ -6,6 +6,16 @@
 
 English version: [README_en.md](README_en.md) · 中文版：[README_zh-CN.md](README_zh-CN.md)
 
+> **Fork note:** this fork adds the Android boot-restore (chainload) feature and an
+> MT6989 (Xiaomi rothko) port, and is verified working on that device. The rest of
+> this file is the original author's description. Fork-specific documentation:
+> [README_en.md](README_en.md) / [README_zh-CN.md](README_zh-CN.md).
+>
+> **Credits** — original sprig: [R0rt1z2](https://github.com/R0rt1z2).
+> Android boot-restore (chainload) rework and the first bootable fork: 秋逸(逸) &lt;2898684403@qq.com&gt;.
+> MT6989 (rothko) v5 port and current maintenance: [woaphone](https://github.com/woaphone).
+> Many thanks to the first two.
+
 ## What and why
 
 This is yet another example of what one can do with the underlying "vulnerability" used in my other project, [fenrir](https://github.com/R0rt1z2/fenrir).
