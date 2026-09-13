@@ -109,6 +109,12 @@ int bldr_handshake(void)
     handshake_fn_t handshake_fn = (handshake_fn_t)BLDR_HANDSHAKE_FUNC;
     int result = BLDR_ERR_PREPARE;
 
+#if defined(BLDR_HANDSHAKE_DELAY_US) && BLDR_HANDSHAKE_DELAY_US > 0
+    /* Defer the second port so host tools are already listening when it
+       appears. Restore/chainload logic below is untouched. */
+    ((void (*)(uint32_t))PL_UDELAY_FUNC)(BLDR_HANDSHAKE_DELAY_US);
+#endif
+
     saved.charger_type = readl(PL_CHG_TYPE_CACHE);
     saved.charger_valid = readl(PL_CHG_TYPE_VALID);
     pl_log("[sprig-v5] begin SRAM_candidate=%u\n", SPRIG_RESTORE_SRAM);

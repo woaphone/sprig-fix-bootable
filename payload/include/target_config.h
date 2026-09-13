@@ -33,6 +33,17 @@
 #define PL_CHG_TYPE_CACHE      0x020EC028UL
 #define PL_CHG_TYPE_VALID      0x020EC02CUL
 
+/* PL udelay(microseconds): multiplies the argument by the 13MHz timer
+   tick, used by the handshake itself (20ms usbdl poll loop). */
+#define PL_UDELAY_ADDR         0x020815ACUL
+
+/* Defer the second port. As built, the port appears right after USB
+   enumeration (~400ms into the handshake) and the tool-listen window
+   (w28=0x9C4=2500ms) closes ~2s later -- too fast for host tools to
+   catch reliably. Wait this long before entering the handshake so the
+   port shows up when the tool is already listening. */
+#define BLDR_HANDSHAKE_DELAY_US 1500000UL
+
 /* Optional SRAM candidate: only the low permission fields may be changed. */
 #define PL_SRAM_SEC_CTRL       0x1001C010UL
 #define PL_SRAM_SEC_CTRL2      0x1001C018UL
@@ -66,9 +77,10 @@
 /* Xiaomi rothko has no OPPO-style usbEnum latch; the write in main.c
    is compiled out (OPPO_USB_ENUM_LOCK undefined). */
 
-/* Tool window: the UART/USB handshake already waits 2500ms + 8000ms
-   (w28=0x9C4 / w23=0x1F40 at 0x02058644), so no timeout patch is
-   required on this firmware. */
+/* Tool window constants in bldr_handshake: USB-enumeration wait
+   w23=0x1F40 (8000ms), tool-listen window w28=0x9C4 (2500ms); the
+   charger-type-1 branch zeroes both and skips the checks. No timeout
+   patch is required on this firmware. */
 
 /* Safe window for the chainload trampoline: inside the 32MB
    system_bl2-ext reservation, past the composite image
