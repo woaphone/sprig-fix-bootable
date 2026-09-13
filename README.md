@@ -1,3 +1,12 @@
+> [!IMPORTANT]
+> **This is a fork, not the original sprig.** This fork adds the Android
+> boot-restore (chainload) feature and an MT6989 (Xiaomi rothko) port, and is
+> verified working on that device — on MT6989 the original sprig cannot
+> successfully send a Download Agent, which the v5 session handling here fixes.
+> A complete list of the changes compared to upstream sprig, with the reasoning
+> behind each one, is in [README_en.md](README_en.md) /
+> [README_zh-CN.md](README_zh-CN.md).
+
 # sprig
 
 <p align="center">
@@ -5,14 +14,6 @@
 </p>
 
 English version: [README_en.md](README_en.md) · 中文版：[README_zh-CN.md](README_zh-CN.md)
-
-> **Fork note:** this fork adds the Android boot-restore (chainload) feature and an
-> MT6989 (Xiaomi rothko) port, and is verified working on that device — on MT6989
-> the original sprig cannot successfully send a Download Agent, which the v5
-> session handling here fixes. A complete list of the changes compared to upstream
-> sprig, with the reasoning behind each one, is in
-> [README_en.md](README_en.md) / [README_zh-CN.md](README_zh-CN.md).
-> The rest of this file is the original author's description.
 
 ## Acknowledgments
 
