@@ -14,6 +14,8 @@ override (pwnage24mtk sign_mtk_cert.py) or the preloader will refuse it.
 import struct
 import sys
 
+from liblk.image import LkImage
+
 PAYLOAD_SLOT = 0x20000
 BL2_LOAD = 0x78000000
 
