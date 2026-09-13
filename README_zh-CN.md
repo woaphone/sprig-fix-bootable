@@ -72,6 +72,20 @@ English version: [README_en.md](README_en.md) · 原版：[README.md](README.md)
 - **`inject.py`**：如上述的复合注入；并注明 `bl2_ext` 子镜像受 CERT1/CERT2 覆盖，注入后必须重签。
 - **README**（英文 / 中文 / 八股文）记录以上全部内容。
 
+## 相较秋逸(逸)的可启动 fork 改了什么（及为什么）
+
+基线：从秋逸(逸)手里接过的 fork——已有 chainload 防砖、期望字补丁校验和一份 *示例* MT6991 `target_config.h`。它在 MT6989 上从未点亮过；在 rothko 上根本发不了 Download Agent。下面是本 fork 在其基础上新增的全部内容，这些叠加起来才是在 rothko 上验证可用的版本。
+
+- **真实的 MT6989 目标配置**（`target_config.h`、`linker.ld`、`inject.py`）：把 MT6991 示例值换成从 rothko FACTORY-ROTHKO-0820 工程 preloader 逆向出的实测地址（握手 `0x020585E0`、回调 `0x0205F604`、`usbdl_vfy_da` `0x02090218`、SLA/DAA/SBC getter `0x02099A50/64/78`），bl2_ext 窗口从 `0xB8000000` 移到 `0x78000000`（rothko 的 `system_bl2-ext` 保留区）。不改这个，fork 指向的函数在 rothko preloader 里根本不存在。
+- **充电检测缓存种子**（`bldr.c`）：rothko 的握手被充电类型缓存门控，不写它握手就打印 "PMIC not dectect usb cable!" 立即返回——第二端口永远不会出现，任何 DA 都发不出去。示例配置里没有对应项。
+- **握手会话保存 / 回读 / 恢复**（`bldr.c`、`bldr.h`、`main.c`）：原来的 `bldr_handshake()` 就是裸调 preloader 握手。现在先把会话状态（充电缓存，可选的 SRAM 安全控制器权限）保存起来，每次写入回读验证，chainload 前全部恢复原值；恢复失败返回 `BLDR_ERR_RESTORE`，`main()` 原地 `wfe` 停机，绝不带坏掉的 Preloader 状态开机。这一步把"DA 会话能开始但以 `All storage init fail` 告终"变成了真正能用的 DA。
+- **入口参数快照**（`entry.S`、`chainload.c`）：原版 chainload 经 x19–x22 直传原厂 `bl2_ext` 的入口参数，前提是 `main()` 不碰 callee-saved 寄存器——MT6989 版编译出来偏偏会碰，导致恢复启动时原厂 `bl2_ext` 收到的是垃圾参数；现在参数改走 BSS 快照（`chainload_boot_args`）。
+- **trampoline 8 字节对齐**（`chainload.S`）：加 `.align 3`——上机时 trampoline 落在 4 mod 8 地址，EL1（`SCTLR.A=1`）当场 data abort。
+- **OPPO usbEnum 闩锁改条件编译**（`main.c`）：无条件的 `writeb(0, OPPO_USB_ENUM_LOCK)` 在没定义该宏的目标上编不过（rothko 没有这个闩锁），现在包在 `#ifdef` 里。
+- **去掉握手超时补丁**：rothko 的握手本身就等 2500ms + 8000ms（`w28=0x9C4 / w23=0x1F40`），`PATCH_TIMEOUT_*` 在这个目标上用不着。
+- **可选 SRAM 权限放宽**（`make SRAM_RESTORE=1`，默认关闭）：握手前清掉 Preloader SRAM 安全控制器中经审计的权限字段，事后恢复；遇到不认识的 SRAM 策略安全中止。
+- **构建工具**（`Makefile`）：`SRAM_RESTORE` 开关、`-MMD -MP` 依赖跟踪加强制重建（特性开关永不复用旧目标文件）、bl2_len 偏移基准改为 `0x78000000`。
+
 ## 构建
 
 需要 `aarch64-none-elf-gcc` 工具链，脚本会自动下载安装；也可以直接用发行版交叉工具链覆盖：

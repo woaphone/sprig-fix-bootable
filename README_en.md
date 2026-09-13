@@ -72,6 +72,20 @@ Baseline: R0rt1z2's sprig as of this fork — an MT6991/Pacman example whose pay
 - **`inject.py`**: composite injection as described above; also documents that the `bl2_ext` sub-image is covered by CERT1/CERT2 and must be re-signed after injecting.
 - **READMEs** (English / Chinese / the fun one) documenting all of the above.
 
+## What changed compared to 秋逸's bootable fork (and why)
+
+Baseline: the fork as received from 秋逸(逸) — chainload anti-brick, expected-word patches, and a *sample* MT6991 `target_config.h`. It had never been brought up on MT6989; on rothko it could not send a Download Agent at all. Everything below is what this fork added on top, and the combination is what was verified working on rothko.
+
+- **Real MT6989 target configuration** (`target_config.h`, `linker.ld`, `inject.py`): replaced the MT6991 example values with addresses reverse-engineered from rothko's FACTORY-ROTHKO-0820 engineering preloader (handshake `0x020585E0`, handler cb `0x0205F604`, `usbdl_vfy_da` `0x02090218`, SLA/DAA/SBC getters `0x02099A50/64/78`) and moved the bl2_ext window `0xB8000000` → `0x78000000` (rothko's `system_bl2-ext` reservation). Without this, the fork pointed at functions that simply do not exist in the rothko preloader.
+- **Charger-detection cache seeding** (`bldr.c`): rothko gates its handshake behind a charger-type cache; without seeding it, the handshake prints "PMIC not dectect usb cable!" and returns immediately — the second port never appears and no DA can ever be sent. The sample config had no equivalent.
+- **Handshake session save / read-back / restore** (`bldr.c`, `bldr.h`, `main.c`): the received `bldr_handshake()` just called the preloader handshake. Now the session state (charger cache, and optionally the SRAM security-controller permissions) is saved first, every write is verified by read-back, and everything is restored before chainload; on restore failure the payload returns `BLDR_ERR_RESTORE` and `main()` parks itself (`wfe`) instead of booting with corrupted Preloader state. This is what turned "DA session starts but ends in `All storage init fail`" into a working DA.
+- **Boot-argument snapshot** (`entry.S`, `chainload.c`): the received chainload passed the stock `bl2_ext` entry arguments through x19–x22, assuming `main()` never touches callee-saved registers. On the MT6989 build it does, so the stock `bl2_ext` received garbage on restore; the arguments now go through a BSS snapshot (`chainload_boot_args`).
+- **8-byte trampoline alignment** (`chainload.S`): `.align 3` — on device the trampoline landed at a 4-mod-8 address and EL1 (`SCTLR.A=1`) data-aborted.
+- **Conditional OPPO usbEnum latch** (`main.c`): the unconditional `writeb(0, OPPO_USB_ENUM_LOCK)` does not compile for a target that does not define the macro (rothko has no such latch); it is now `#ifdef`-guarded.
+- **Dropped the handshake-timeout patch**: rothko's handshake already waits 2500 ms + 8000 ms (`w28=0x9C4 / w23=0x1F40`), so `PATCH_TIMEOUT_*` is unnecessary on this target.
+- **Optional SRAM permission relaxation** (`make SRAM_RESTORE=1`, default off): clears the audited permission fields of the Preloader's SRAM security controllers before the handshake and restores them afterwards; unrecognized SRAM policies abort safely.
+- **Build tooling** (`Makefile`): `SRAM_RESTORE` flag, `-MMD -MP` dependency tracking plus forced rebuilds so flag changes never reuse stale objects, and the bl2_len offset base moved to `0x78000000`.
+
 ## Building
 
 Requires an `aarch64-none-elf-gcc` toolchain. `build.sh` downloads one automatically; otherwise override the tools directly:
