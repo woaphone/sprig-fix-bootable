@@ -10,11 +10,13 @@ English version: [README_en.md](README_en.md) · 中文版：[README_zh-CN.md](R
 > MT6989 (Xiaomi rothko) port, and is verified working on that device. The rest of
 > this file is the original author's description. Fork-specific documentation:
 > [README_en.md](README_en.md) / [README_zh-CN.md](README_zh-CN.md).
->
-> **Credits** — original sprig: [R0rt1z2](https://github.com/R0rt1z2).
-> Android boot-restore (chainload) rework and the first bootable fork: 秋逸(逸) &lt;2898684403@qq.com&gt;.
-> MT6989 (rothko) v5 port and current maintenance: [woaphone](https://github.com/woaphone).
-> Many thanks to the first two.
+
+## Acknowledgments
+
+- [R0rt1z2](https://github.com/R0rt1z2) — author of the original sprig.
+- 秋逸(逸) &lt;2898684403@qq.com&gt; — Android boot-restore (chainload) rework and the first bootable fork.
+
+Thank you both — this repository would not exist without your work.
 
 ## What and why
 

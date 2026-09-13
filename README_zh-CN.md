@@ -6,16 +6,20 @@
 
 English version: [README_en.md](README_en.md) · 原版：[README.md](README.md) · 中文版：README_zh-CN.md
 
-> **署名** —— sprig 原作者：[R0rt1z2](https://github.com/R0rt1z2)。
-> 恢复安卓引导（chainload）改造、首个可启动分支：秋逸(逸) &lt;2898684403@qq.com&gt;。
-> MT6989（小米 rothko）v5 移植与当前维护：[woaphone](https://github.com/woaphone)（woa手机）。
-> 感谢前两位——本仓库建立在他们的工作之上。
+> 本版本基于 [R0rt1z2](https://github.com/R0rt1z2) 的 sprig。恢复安卓引导（chainload）改造：秋逸(逸) &lt;2898684403@qq.com&gt;；MT6989（小米 rothko）v5 移植与当前维护：[woaphone](https://github.com/woaphone)（woa手机）。
 
 ## 是什么
 
 基于 [fenrir](https://github.com/R0rt1z2/fenrir) 漏洞的又一个例子：用一段极小的 payload 替换现代 ARMv8 MediaTek 设备 LK 分区里的 `bl2_ext`，在 EL3 下修改 Preloader，关闭 SBC / SLA / DAA 安全校验，从而可以用 `penumbra` 或 `mtkclient` 启动未签名的 DA，任意刷写、导出分区。
 
 你会看到两个 Preloader 端口：第一个约 2 秒消失；第二个（payload 修改后暴露）保持约 8 秒供你连接工具。
+
+## 致谢
+
+- [R0rt1z2](https://github.com/R0rt1z2) —— sprig 原作者。
+- 秋逸(逸) &lt;2898684403@qq.com&gt; —— 恢复安卓引导（chainload）改造与首个可启动分支。
+
+感谢二位——没有你们的工作就没有这个仓库。
 
 ## v5 新增（已在 MT6989 rothko 上验证可用）
 

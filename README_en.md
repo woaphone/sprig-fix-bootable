@@ -6,16 +6,20 @@
 
 English version: README_en.md · 中文版：[README_zh-CN.md](README_zh-CN.md) · Original author's version: [README.md](README.md)
 
-> **Credits** — original sprig: [R0rt1z2](https://github.com/R0rt1z2).
-> Android boot-restore (chainload) rework and the first bootable fork: 秋逸(逸) &lt;2898684403@qq.com&gt;.
-> MT6989 (Xiaomi rothko) v5 port and current maintenance: [woaphone](https://github.com/woaphone).
-> Many thanks to the first two — this repository stands on their work.
+> This version is a fork of [R0rt1z2](https://github.com/R0rt1z2)'s sprig. Android boot-restore (chainload) rework by 秋逸(逸) &lt;2898684403@qq.com&gt;; MT6989 (Xiaomi rothko) v5 port and current maintenance by [woaphone](https://github.com/woaphone).
 
 ## What
 
 Yet another example built on the underlying vulnerability used in [fenrir](https://github.com/R0rt1z2/fenrir): a tiny payload replaces the `bl2_ext` image in the LK partition of modern ARMv8 MediaTek devices, runs in EL3, and patches the Preloader in memory to disable SBC / SLA / DAA checks. This allows booting unsigned DAs with `penumbra` or `mtkclient` for unrestricted flash/dump operations.
 
 You will see two Preloader ports: the first disappears within ~2 seconds, the second (exposed after the payload patches the Preloader) stays for ~8 seconds to connect your tool.
+
+## Acknowledgments
+
+- [R0rt1z2](https://github.com/R0rt1z2) — author of the original sprig.
+- 秋逸(逸) &lt;2898684403@qq.com&gt; — Android boot-restore (chainload) rework and the first bootable fork.
+
+Thank you both — this repository would not exist without your work.
 
 ## What's new in v5 (verified on MT6989 rothko)
 
