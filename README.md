@@ -1,10 +1,10 @@
 > [!IMPORTANT]
-> **This is a fork, not the original sprig.** This fork adds the Android
-> boot-restore (chainload) feature and an MT6989 (Xiaomi rothko) port, and is
-> verified working on that device — on MT6989 the original sprig cannot
-> successfully send a Download Agent, which the v5 session handling here fixes.
-> A complete list of the changes compared to upstream sprig, with the reasoning
-> behind each one, is in [README_en.md](README_en.md) /
+> **This is a fork, not the original sprig.** Credit for making it bootable goes
+> to 秋逸(逸), who reworked the Android boot-restore (chainload). [woaphone](https://github.com/woaphone)
+> only added MT6989 (Xiaomi rothko) support — added because the original sprig
+> cannot successfully send a Download Agent on MT6989 — and verified it working
+> on that device. A complete list of the changes compared to upstream sprig,
+> with the reasoning behind each one, is in [README_en.md](README_en.md) /
 > [README_zh-CN.md](README_zh-CN.md).
 
 # sprig

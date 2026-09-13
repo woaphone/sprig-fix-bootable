@@ -6,7 +6,7 @@
 
 English version: README_en.md · 中文版：[README_zh-CN.md](README_zh-CN.md) · Original author's version: [README.md](README.md)
 
-> This version is a fork of [R0rt1z2](https://github.com/R0rt1z2)'s sprig. Android boot-restore (chainload) rework by 秋逸(逸) &lt;2898684403@qq.com&gt;; MT6989 (Xiaomi rothko) v5 port and current maintenance by [woaphone](https://github.com/woaphone).
+> This version is a fork of [R0rt1z2](https://github.com/R0rt1z2)'s sprig. Making it bootable (the Android boot-restore / chainload rework) is 秋逸(逸)'s work &lt;2898684403@qq.com&gt;; [woaphone](https://github.com/woaphone) only added MT6989 (Xiaomi rothko) support — added because the original sprig cannot successfully send a Download Agent on MT6989.
 
 ## What
 
@@ -17,9 +17,9 @@ You will see two Preloader ports: the first disappears within ~2 seconds, the se
 ## Acknowledgments
 
 - [R0rt1z2](https://github.com/R0rt1z2) — author of the original sprig.
-- 秋逸(逸) &lt;2898684403@qq.com&gt; — Android boot-restore (chainload) rework and the first bootable fork.
+- 秋逸(逸) &lt;2898684403@qq.com&gt; — made it bootable: the Android boot-restore (chainload) rework and the first bootable fork.
 
-Thank you both — this repository would not exist without your work.
+Thank you both — this repository would not exist without your work. (The MT6989 support in this fork was added by woaphone only because the original sprig could not send a Download Agent on MT6989.)
 
 ## What's new in v5 (verified on MT6989 rothko)
 

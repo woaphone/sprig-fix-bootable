@@ -6,7 +6,7 @@
 
 English version: [README_en.md](README_en.md) · 原版：[README.md](README.md) · 中文版：README_zh-CN.md
 
-> 本版本基于 [R0rt1z2](https://github.com/R0rt1z2) 的 sprig。恢复安卓引导（chainload）改造：秋逸(逸) &lt;2898684403@qq.com&gt;；MT6989（小米 rothko）v5 移植与当前维护：[woaphone](https://github.com/woaphone)（woa手机）。
+> 本版本基于 [R0rt1z2](https://github.com/R0rt1z2) 的 sprig。让它能启动（恢复安卓引导 / chainload 改造）是秋逸(逸) &lt;2898684403@qq.com&gt; 的工作；[woaphone](https://github.com/woaphone) 只是添加了 MT6989（小米 rothko）支持——起因是原版 sprig 在 MT6989 上发不了 Download Agent。
 
 ## 是什么
 
@@ -17,9 +17,9 @@ English version: [README_en.md](README_en.md) · 原版：[README.md](README.md)
 ## 致谢
 
 - [R0rt1z2](https://github.com/R0rt1z2) —— sprig 原作者。
-- 秋逸(逸) &lt;2898684403@qq.com&gt; —— 恢复安卓引导（chainload）改造与首个可启动分支。
+- 秋逸(逸) &lt;2898684403@qq.com&gt; —— 让它能启动：恢复安卓引导（chainload）改造与首个可启动分支。
 
-感谢二位——没有你们的工作就没有这个仓库。
+感谢二位——没有你们的工作就没有这个仓库。（本 fork 的 MT6989 支持由 woaphone 添加，起因只是原版 sprig 在 MT6989 上发不了 Download Agent。）
 
 ## v5 新增（已在 MT6989 rothko 上验证可用）
 
